@@ -2,7 +2,8 @@ import serial
 import threading
 import time
 
-class SerialHandler(threading.Thread):
+
+class SerialThread(threading.Thread):
     """
     A threaded serial port handler.
 
@@ -27,27 +28,28 @@ class SerialHandler(threading.Thread):
         on_new_line_callback (function): The callback function to be invoked when a new line is received.
         on_error_callback (function): The callback function to be invoked when a serial device error is detected.
         max_bytes (int): The maximum number of bytes to receive for each line.
-        serial (serial.Serial): The serial connection object.
-        is_running (bool): Indicates if the thread is running.
-        is_paused (bool): Indicates if the reading loop is currently paused.
+        serial_port (serial.Serial): The serial connection object.
+        is_started (bool): Indocates if the reading/writing thread is started.
+        is_paused (bool): Indicates if the reading loop is currently paused (writing is possible).
         write_queue (list): Queue to store messages to send.
         thread (threading.Threadad): Thread responsible for serial communication.
 
     """
+
     def __init__(self, port, baudrate, on_new_line_callback, on_error_callback=None, max_bytes=1024):
         self.port = port
         self.baudrate = baudrate
         self.on_new_line_callback = on_new_line_callback
         self.on_error_callback = on_error_callback
         self.max_bytes = max_bytes
-        self.serial = None
-        self.is_running = False
+        self.serial_port = None
+        self.is_started = False
         self.is_paused = False
         self.write_queue = []
         self.thread = None
         threading.Thread.__init__(self)
 
-    def run(self):
+    def __run(self):
         """
         The main method executed in the thread.
 
@@ -70,32 +72,34 @@ class SerialHandler(threading.Thread):
                 # inner loop control general flow of the write/read process
                 # each step checks if process is_running to quickly exit
                 # this loop when needed
-                while self.is_running:
+                while self.serial_port.is_open:
                     # send any buffered data (even when reader is paused)
                     self.__send_data_from_queue()
 
-                    if self.is_running and self.is_paused:
+                    if self.serial_port.is_open and self.is_paused:
                         # when reader is paused do not consume too much CPU time
                         sync_with_newline = True
                         time.sleep(0.1)
                         continue
-            
-                    while self.is_running and sync_with_newline:
-                        # sync by reading small chunks of incoming data
-                        garbage_data = self.serial.read_until('\n', 100)
+
+                    while self.serial_port.is_open and sync_with_newline:
+                        # sync by reading small chunks of incoming ASCII data
+                        garbage_data = self.serial_port.read_until(
+                            b'\n', 100).decode('UTF-8')
                         if garbage_data[-1] == '\n':
                             sync_with_newline = False
                             line_buffer = ''
 
-                    if self.is_running:
+                    if self.serial_port.is_open:
                         # analyze incoming data byte by byte
-                        incoming_byte = self.serial.read(1)
+                        incoming_byte = self.serial_port.read(
+                            1).decode('UTF-8')
                         if incoming_byte == '\n':
                             # send received line for further processing
                             self.on_new_line_callback(line_buffer)
                             line_buffer = ''
                         elif len(incoming_byte) > 0 and len(line_buffer) < self.max_bytes:
-                            # line buffer is filled up to its set capacity
+                            # line buffer is filled up to its capacity
                             line_buffer += incoming_byte
                 # when above loop is finished it means thread end was requested
                 break
@@ -107,23 +111,23 @@ class SerialHandler(threading.Thread):
             finally:
                 # on any error serial port should be closed to be freshly opened in a while
                 self.__close_serial_connection()
-                # if thread end was requested this method should return
-                if not self.is_running:
+                # if thread stop was requested this method should return
+                if not self.is_started:
                     return
 
     def start(self):
         """
         Start serial handler.
         If handler is not running it spawn a new read/write thread and open serial connection.
-        
+
         """
         if self.thread == None or not self.thread.is_alive():
             try:
-                self.thread = threading.Thread(target=self.run)
+                self.thread = threading.Thread(target=self.__run)
                 self.thread.start()
+                self.is_started = True
             except:
                 print("Can't start serial handling thread!")
-
 
     def stop(self):
         """
@@ -131,7 +135,19 @@ class SerialHandler(threading.Thread):
         It terminate internally spawned reading/writing thread and close serial connection.
 
         """
-        self.is_running = False
+        self.__close_serial_connection()
+        self.is_started = False
+
+    def join(self):
+        """
+        Join serial handler thread.
+
+        It stop reading/writing thread and join.
+
+        """
+        if self.is_started:
+            self.stop()
+        self.thread.join()
 
     def pause(self):
         """
@@ -155,43 +171,33 @@ class SerialHandler(threading.Thread):
     def write(self, data):
         """
         Write new data to the FIFO writing queue.
-        Data will be send automatically as soon as possible.
+        Data to be sent automatically as soon as possible.
 
         """
-        if self.thread is not None and self.thread.is_alive() and len(data) > 0:
+        if self.is_started and len(data) > 0:
             self.write_queue.append(data)
-
-    def get_thread(self):
-        """
-        Get currently spawned thread so the caller may join on it or check if is_alive().
-        It may be None when thread was not spawned.
-        
-        """
-        return self.thread
 
     def __open_serial_connection(self):
         """"
         Open HW connection to the serial device.
-        
+
         """
-        self.serial = serial.Serial(self.port, self.baudrate)
-        self.is_running = True
+        self.serial_port = serial.Serial(self.port, self.baudrate)
 
     def __close_serial_connection(self):
         """
         Close HW connection to the serial device.
-        
+
         """
-        if self.serial and self.serial.is_open:
-            self.serial.close()
-            self.is_running = False
+        if self.serial_port and self.serial_port.is_open:
+            self.serial_port.close()
 
     def __send_data_from_queue(self):
         """
         Send all queued data (FIFO order) over serial port.
-        
+
         """
-        if self.serial and self.serial.is_open:
+        if self.serial_port and self.serial_port.is_open:
             while self.write_queue:
                 data = self.write_queue.pop(0)
-                self.serial.write(data)
+                self.serial_port.write(data.encode('UTF-8'))
