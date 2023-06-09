@@ -1,11 +1,13 @@
 from .serialthread import SerialThread
+from .receivers.gnss import GNSS
 
 
 class TimingGnss:
     def __init__(self, port, baudrate):
+        self.out_frequency = 0
         self.serial_thread = SerialThread(
             port, baudrate, self.__new_message, self.__serial_thread_error)
-        self.out_frequency = 0
+        self.gnss = GNSS(self.write)
 
     def __enter__(self):
         self.serial_thread.start()
@@ -13,6 +15,9 @@ class TimingGnss:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.serial_thread.join()
+
+    def init(self):
+        return self.gnss.detect()
 
     def write(self, data):
         message = self.__assemble_message(data)
@@ -50,10 +55,8 @@ class TimingGnss:
         return message
 
     def __new_message(self, message):
-        if '$PERDSYS' in message:
-            info = message.split('*')[0].split(',')
-            print('Connected to ' +
-                  info[5] + ' receiver (' + info[2] + ') version: ' + info[3] + '.')
+        # possibly place for messages filtering and dispatching
+        self.gnss.process(message)
 
     def __serial_thread_error(self):
         print('Serial thread error occured.')
