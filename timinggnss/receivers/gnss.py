@@ -3,36 +3,41 @@ import time
 
 
 class GNSS:
-    def __init__(self, data_tx_callback):
-        self.detected = False
-        self.tx = data_tx_callback
-        self.hw = Furuno()
+    def __init__(self, tx_data_callback):
+        self.tx_data = tx_data_callback
+        self.hw_detection_list = [Furuno()]
+
+        self.hw = None
+        self.hw_detected = False
 
     def detect(self):
-        self.detected = False
+        self.hw_detected = False
         max_detection_time_sec = 5
 
-        self.__send(self.hw.detection_message())
+        for concrete_hw in self.hw_detection_list:
+            self.hw = concrete_hw
+            self.__tx_data(self.hw.detection_message())
 
-        start = time.time()
-        while time.time() - start < max_detection_time_sec:
-            if self.detected:
-                break
-            time.sleep(1)
+            start = time.time()
+            while time.time() - start < max_detection_time_sec:
+                time.sleep(1)
+                if self.hw_detected:
+                    return True
 
-        return self.detected
+        return self.hw_detected
 
     def process(self, message):
-        if not self.detected:
-            self.__hw_detection(message)
+        if self.hw is not None:
+            if not self.hw_detected:
+                self.__hw_detection(message)
 
     def __hw_detection(self, message):
-        self.detected = self.hw.detect(message)
-        if self.detected:
+        self.hw_detected = self.hw.detect(message)
+        if self.hw_detected:
             hw_info = self.hw.info()
             print('Connected to ' + hw_info['id'] + ' receiver (name: ' +
                   hw_info['name'] + ', version: ' + hw_info['version'] + '.')
 
-    def __send(self, message):
-        if self.tx:
-            self.tx(message)
+    def __tx_data(self, message):
+        if self.tx_data:
+            self.tx_data(message)
