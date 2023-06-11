@@ -29,8 +29,9 @@ class GNSS:
     def __hw_detection(self, message):
         self.detected = self.hw.detect(message)
         if self.detected:
-            print('Connected to ' + self.hw.name() + ' receiver (model: ' +
-                  self.hw.model() + ' , FW version: ' + self.hw.fw_version() + '.')
+            hw_info = self.hw.info()
+            print('Connected to ' + hw_info['id'] + ' receiver (name: ' +
+                  hw_info['name'] + ', version: ' + hw_info['version'] + '.')
 
     def __send(self, message):
         if self.tx:

@@ -8,31 +8,35 @@ class Furuno:
         self.MODULE_DETECTION_MESSAGE_PREFIX = 'PERDSYS'
         self.MODULE_DETECTION_STRING_GT88 = 'GT88'
 
-        self.module_name = 'NA'
-        self.module_model = 'NA'
-        self.module_fw_version = 'NA'
+        self.module_info = {
+            'name': 'NA',
+            'version': 'NA',
+            'id': 'NA'
+        }
 
     def detection_message(self):
         return Furuno.assemble_message(self.MESSAGE_GET_VERSION)
 
     def detect(self, message):
         if self.MODULE_DETECTION_MESSAGE_PREFIX in message:
-            info = message.split('*')[0].split(',')
-            if info[5] == self.MODULE_DETECTION_STRING_GT88:
-                self.module_name = info[5]
-                self.module_model = info[2]
-                self.module_fw_version = info[3]
-                return True
+            # PERDSYS,VERSION,device,version,reason,reserve*CRC
+            data_count_after_split_with_crc = 2
+            elements_count_in_info_section = 6
+
+            data = message.split('*')
+            if len(data) == data_count_after_split_with_crc:
+                # interesting information is in the 1st data section
+                info = data[0].split(',')
+                if len(info) == elements_count_in_info_section:
+                    if info[5] == self.MODULE_DETECTION_STRING_GT88:
+                        self.module_info['name'] = info[2]
+                        self.module_info['version'] = info[3]
+                        self.module_info['id'] = info[5]
+                        return True
         return False
 
-    def name(self):
-        return self.module_name
-
-    def model(self):
-        return self.module_model
-
-    def fw_version(self):
-        return self.module_fw_version
+    def info(self):
+        return self.module_info
 
     @staticmethod
     def assemble_message(data):
