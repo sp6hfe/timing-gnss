@@ -41,11 +41,11 @@ class GNSS:
             self.__tx_data(self.hw.ext_signal_disable_message())
 
     def __process_hw_detection(self, message):
-        self.hw_detected = self.hw.detect(message)
-        if self.hw_detected:
-            hw_info = self.hw.info()
-            print('Connected to ' + hw_info['id'] + ' receiver (name: ' +
-                  hw_info['name'] + ', version: ' + hw_info['version'] + '.')
+        detection_result = self.hw.detect(message)
+        if detection_result is not None:
+            self.hw_detected = True
+            print('Connected to ' + detection_result['id'] + ' receiver (name: ' +
+                  detection_result['name'] + ', version: ' + detection_result['version'] + '.')
 
     def __tx_data(self, message):
         if self.tx_data:
