@@ -4,10 +4,8 @@ import time
 
 def main():
     with TimingGnss('/dev/ttyUSB0', 38400) as TG:
-        TG.init()
-
-        for _ in range(0, 3):
-            time.sleep(1)
+        if not TG.init():
+            print('GNSS module couldn\'t be initialized - exiting.')
 
 
 if __name__ == "__main__":

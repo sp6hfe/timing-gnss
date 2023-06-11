@@ -4,7 +4,10 @@ from .receivers.gnss import GNSS
 
 class TimingGnss:
     def __init__(self, port, baudrate):
-        self.out_frequency = 0
+        self.ext_signal_frequency_hz = 0
+        self.ext_signal_duty = 50
+        self.ext_signal_offset_to_pps = 0
+
         self.serial_thread = SerialThread(
             port, baudrate, self.__new_message, self.__serial_thread_error)
         self.gnss = GNSS(self.write)
@@ -20,39 +23,19 @@ class TimingGnss:
         return self.gnss.detect()
 
     def write(self, data):
-        message = self.__assemble_message(data)
-        if len(message) > 0:
-            self.serial_thread.write(message)
+        if len(data) > 0:
+            self.serial_thread.write(data)
 
-    def set_out_frequency(self, frequency=1000):
-        if frequency < 10:
-            return False
+    def ext_signal_set(self, frequency=1000):
+        self.ext_signal_frequency_hz = int(frequency)
+        return self.ext_signal_enable()
 
-        self.out_frequency = int(frequency)
-        return self.enable_out_frequency()
+    def ext_signal_enable(self):
+        self.gnss.ext_signal_enable(
+            self.ext_signal_frequency_hz, self.ext_signal_duty, self.ext_signal_offset_to_pps)
 
-    def enable_out_frequency(self):
-        query = 'PERDAPI,FREQ,1,' + str(self.out_frequency) + ',50,0'
-        message = self.__assemble_message(query)
-        self.serial_thread.write(message)
-
-    def disable_out_frequency(self):
-        message = self.__assemble_message('PERDAPI,FREQ,0,0,0,0')
-        self.serial_thread.write(message)
-
-    def __checksum(self, data):
-        checksum = 0
-        for byte in data:
-            checksum ^= ord(byte)
-        return checksum
-
-    def __assemble_message(self, data):
-        if len(data) < 1:
-            return ''
-
-        checksum = self.__checksum(data)
-        message = '$' + data + '*' + hex(checksum)[2:].upper() + '\r\n'
-        return message
+    def ext_signal_disable(self):
+        self.gnss.ext_signal_disable()
 
     def __new_message(self, message):
         # possibly place for messages filtering and dispatching

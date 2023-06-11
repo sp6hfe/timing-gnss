@@ -29,9 +29,18 @@ class GNSS:
     def process(self, message):
         if self.hw is not None:
             if not self.hw_detected:
-                self.__hw_detection(message)
+                self.__process_hw_detection(message)
 
-    def __hw_detection(self, message):
+    def ext_signal_enable(self, frequency_hz, duty, offset_to_pps):
+        if self.hw is not None:
+            self.__tx_data(self.hw.ext_signal_enable_message(
+                frequency_hz, duty, offset_to_pps))
+
+    def ext_signal_disable(self):
+        if self.hw is not None:
+            self.__tx_data(self.hw.ext_signal_disable_message())
+
+    def __process_hw_detection(self, message):
         self.hw_detected = self.hw.detect(message)
         if self.hw_detected:
             hw_info = self.hw.info()
