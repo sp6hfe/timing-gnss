@@ -10,8 +10,16 @@ class GNSS:
         self.hw = None
         self.hw_detected = False
 
+        self.hw_name = 'NA'
+        self.hw_version = 'NA'
+        self.hw_id = 'NA'
+
     def detect(self):
         self.hw_detected = False
+        self.hw_name = 'NA'
+        self.hw_version = 'NA'
+        self.hw_id = 'NA'
+
         max_detection_time_sec = 5
 
         for concrete_hw in self.hw_detection_list:
@@ -31,6 +39,16 @@ class GNSS:
             if not self.hw_detected:
                 self.__process_hw_detection(message)
 
+    def status(self):
+        result = dict()
+
+        result['detected'] = self.hw_detected
+        result['name'] = self.hw_name
+        result['version'] = self.hw_version
+        result['id'] = self.hw_id
+
+        return result
+
     def ext_signal_enable(self, frequency_hz, duty, offset_to_pps):
         if self.hw is not None:
             self.__tx_data(self.hw.ext_signal_enable_message(
@@ -43,9 +61,10 @@ class GNSS:
     def __process_hw_detection(self, message):
         detection_result = self.hw.detect(message)
         if detection_result is not None:
+            self.hw_name = detection_result['name']
+            self.hw_version = detection_result['version']
+            self.hw_id = detection_result['id']
             self.hw_detected = True
-            print('Connected to ' + detection_result['id'] + ' receiver (name: ' +
-                  detection_result['name'] + ', version: ' + detection_result['version'] + '.')
 
     def __tx_data(self, message):
         if self.tx_data:

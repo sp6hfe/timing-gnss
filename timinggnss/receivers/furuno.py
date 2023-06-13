@@ -15,13 +15,12 @@ class Furuno:
                 # interesting information is in the 1st data section
                 info = data[0].split(',')
                 if len(info) == elements_count_in_info_section:
-                    if info[5] == 'GT88':
-                        module_info = {
-                            'name': info[2],
-                            'version': info[3],
-                            'id': info[5]
-                        }
-                        return module_info
+                    module_info = {
+                        'name': info[2],
+                        'version': info[3],
+                        'id': info[5]
+                    }
+                    return module_info
         return None
 
     # MESSAGES #
