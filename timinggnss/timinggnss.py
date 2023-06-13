@@ -27,6 +27,9 @@ class TimingGnss:
         if len(data) > 0:
             self.serial_thread.write(data)
 
+    def debug_log(self, is_enabled):
+        self.serial_thread.debug_log(is_enabled)
+
     def status(self):
         timinggnss_status = self.gnss.status()
         timinggnss_status['ext_signal_enabled'] = self.ext_signal_enabled
