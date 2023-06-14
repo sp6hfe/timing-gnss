@@ -69,6 +69,7 @@ class SerialThread(threading.Thread):
             try:
                 self.__open_serial_connection()
                 sync_with_newline = True
+                garbage_data = ''
                 line_buffer = ''
 
                 # inner loop control general flow of the write/read process
@@ -86,12 +87,13 @@ class SerialThread(threading.Thread):
 
                     while self.serial_port.is_open and sync_with_newline:
                         # sync by reading small chunks of incoming ASCII data
-                        garbage_data = self.serial_port.read_until(
+                        garbage_data += self.serial_port.read_until(
                             b'\n', 100).decode('UTF-8')
                         if garbage_data[-1] == '\n':
                             if self.debug_log_enabled:
-                                print('<(g) ' + garbage_data)
+                                print('< [g] ' + garbage_data[::-1])
                             sync_with_newline = False
+                            garbage_data = ''
                             line_buffer = ''
 
                     if self.serial_port.is_open:
