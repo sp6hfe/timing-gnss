@@ -16,7 +16,6 @@ def main():
                   tg_status['name'] + ', version: ' + tg_status['version'] + '.')
         else:
             print('Something is wrong, GNSS module should be detected already.')
-            return
 
 
 if __name__ == "__main__":

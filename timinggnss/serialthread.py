@@ -1,9 +1,9 @@
 import serial
-import threading
+from threading import Thread, Lock
 import time
 
 
-class SerialThread(threading.Thread):
+class SerialThread(Thread):
     """
     A threaded serial port handler.
 
@@ -49,7 +49,8 @@ class SerialThread(threading.Thread):
         self.write_queue = []
         self.thread = None
         self.debug_log_enabled = False
-        threading.Thread.__init__(self)
+        self.mutex = Lock()
+        Thread.__init__(self)
 
     def __run(self):
         """
@@ -131,7 +132,7 @@ class SerialThread(threading.Thread):
         """
         if self.thread == None or not self.thread.is_alive():
             try:
-                self.thread = threading.Thread(target=self.__run)
+                self.thread = Thread(target=self.__run)
                 self.thread.start()
                 self.is_started = True
             except:
@@ -155,7 +156,8 @@ class SerialThread(threading.Thread):
         """
         if self.is_started:
             self.stop()
-        self.thread.join()
+        if self.thread:
+            self.thread.join()
 
     def pause(self):
         """
@@ -209,8 +211,9 @@ class SerialThread(threading.Thread):
         Close HW connection to the serial device.
 
         """
-        if self.serial_port and self.serial_port.is_open:
-            self.serial_port.close()
+        with self.mutex:
+            if self.serial_port and self.serial_port.is_open:
+                self.serial_port.close()
 
     def __send_data_from_queue(self):
         """
