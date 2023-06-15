@@ -29,6 +29,7 @@ class TimingGnss:
 
     def debug_log(self, is_enabled):
         self.serial_thread.debug_log(is_enabled)
+        self.gnss.debug_log(is_enabled)
 
     def status(self):
         timinggnss_status = self.gnss.status()

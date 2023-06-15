@@ -1,12 +1,18 @@
 
 
 class Furuno:
+
+    DETECTION_MESSAGES = ['PERDSYS']
+    POSITION_MODE_MESSAGES = ['PERDCRY']
+
     def __init__(self):
         self.MESSAGE_START_HOT = 'PERDAPI,START,HOT'
 
+    # MESSAGE DECODERS #
+
     def detect(self, message):
         # PERDSYS,VERSION,device,version,reason,reserve*CRC
-        if 'PERDSYS' in message:
+        if 'PERDSYS,VERSION' in message:
             data_count_after_split_with_crc = 2
             elements_count_in_info_section = 6
 
@@ -23,12 +29,15 @@ class Furuno:
                     return module_info
         return None
 
-    # MESSAGES #
+    def position_mode_decode(self, message):
+        pass
 
-    def detection_message(self):
+    # MESSAGE GENERATORS #
+
+    def get_detection_message(self):
         return self.__assemble_message('PERDSYS,VERSION')
 
-    def position_mode_set_message(self, mode: str = 'SS', sigma_threshold: int = 10, time_threshold: int = 1440, latitude: float = 0, longitude: float = 0, altitude: float = 0):
+    def get_position_mode_set_message(self, mode: str = 'SS', sigma_threshold: int = 10, time_threshold: int = 1440, latitude: float = 0, longitude: float = 0, altitude: float = 0):
         # modes: 'NAV'- navigation, 'SS' - self survey, 'CSS' - continous self survey, 'TO' - time only
         # sigma threshold in meters
         sigma_threshold_low_limit = 0
@@ -68,7 +77,7 @@ class Furuno:
 
         return self.__assemble_message(query)
 
-    def ext_signal_enable_message(self, frequency_hz=10**6, duty=50, offset_to_pps=0):
+    def get_ext_signal_enable_message(self, frequency_hz=10**6, duty=50, offset_to_pps=0):
         frequency_low_limit_hz = 10
         frequency_high_limit_hz = 40*10**6
         duty_low_limit = 10
@@ -88,8 +97,10 @@ class Furuno:
             ',' + str(new_offset_to_pps)
         return self.__assemble_message(query)
 
-    def ext_signal_disable_message(self):
+    def get_ext_signal_disable_message(self):
         return self.__assemble_message('PERDAPI,FREQ,0,0,0,0')
+
+    # HELPERS #
 
     def __assemble_message(self, data):
         if len(data) < 1:
