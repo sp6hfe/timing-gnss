@@ -59,16 +59,21 @@ class GNSS:
             if prefix in message:
                 if self.debug_log_enabled:
                     print('< ^^')
-                if not self.hw_detected:
+                # incoming messages processing
+                if self.hw_detected:
+                    self.hw.process(message)
+                else:
                     self.__process_hw_detection(message)
 
     def status(self):
         result = dict()
+        position_mode_data = self.hw.get_position_mode_data()
 
         result['detected'] = self.hw_detected
         result['name'] = self.hw_name
         result['version'] = self.hw_version
         result['id'] = self.hw_id
+        result['mode'] = position_mode_data['mode']
 
         return result
 

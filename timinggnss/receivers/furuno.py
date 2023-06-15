@@ -8,29 +8,20 @@ class Furuno:
     def __init__(self):
         self.MESSAGE_START_HOT = 'PERDAPI,START,HOT'
 
-    # MESSAGE DECODERS #
+        self.position_mode = {
+            'mode': 'NA',
+            'sigma_threshold': 0,
+            'time_threshold': 0,
+            'position_updates': 0
+        }
 
-    def detect(self, message):
-        # PERDSYS,VERSION,device,version,reason,reserve*CRC
-        if 'PERDSYS,VERSION' in message:
-            data_count_after_split_with_crc = 2
-            elements_count_in_info_section = 6
+    def process(self, message):
+        if self.__detect_message(message, self.POSITION_MODE_MESSAGES):
+            self.__position_mode_decode(message)
 
-            data = message.split('*')
-            if len(data) == data_count_after_split_with_crc:
-                # interesting information is in the 1st data section
-                info = data[0].split(',')
-                if len(info) == elements_count_in_info_section:
-                    module_info = {
-                        'name': info[2],
-                        'version': info[3],
-                        'id': info[5]
-                    }
-                    return module_info
-        return None
-
-    def position_mode_decode(self, message):
-        pass
+    # DATA PROVIDERS #
+    def get_position_mode_data(self):
+        return self.position_mode
 
     # MESSAGE GENERATORS #
 
@@ -100,6 +91,47 @@ class Furuno:
     def get_ext_signal_disable_message(self):
         return self.__assemble_message('PERDAPI,FREQ,0,0,0,0')
 
+    # PUBLIC MESSAGE DECODERS #
+
+    def detect(self, message):
+        # PERDSYS,VERSION,device,version,reason,reserve*CRC
+        if 'PERDSYS,VERSION' in message:
+            elements_count_after_split_with_crc = 2
+            elements_count_in_data_section = 6
+
+            message_parts = message.split('*')
+            if len(message_parts) == elements_count_after_split_with_crc:
+                # interesting information is in the data section
+                data = message_parts[0].split(',')
+                if len(data) == elements_count_in_data_section:
+                    module_info = {
+                        'name': data[2],
+                        'version': data[3],
+                        'id': data[5]
+                    }
+                    return module_info
+        return None
+
+    # PRIVATE MESSAGE DECODERS #
+
+    def __position_mode_decode(self, message):
+        if 'PERDCRY,TPS3' in message:
+            print(message)
+            elements_count_after_split_with_crc = 2
+            elements_count_in_data_section = 11
+
+            message_parts = message.split('*')
+            if len(message_parts) == elements_count_after_split_with_crc:
+                # interesting information is in the data section
+                data = message_parts[0].split(',')
+                if len(data) == elements_count_in_data_section:
+                    self.position_mode['mode'] = self.__translate_position_mode(
+                        int(data[2]))
+                    self.position_mode['sigma_threshold'] = int(data[3])
+                    self.position_mode['position_updates'] = int(data[5])
+                    self.position_mode['time_threshold'] = int(data[6])
+                print(self.position_mode)
+
     # HELPERS #
 
     def __assemble_message(self, data):
@@ -125,3 +157,20 @@ class Furuno:
             value = int(value * 10**max_decimal_places) / \
                 (10**max_decimal_places)
         return value
+
+    def __detect_message(self, message, detectables_list):
+        for detectable in detectables_list:
+            if detectable in message:
+                return True
+        return False
+
+    def __translate_position_mode(self, mode_code):
+        if mode_code == 0:
+            return 'NAV'
+        if mode_code == 1:
+            return 'SS'
+        if mode_code == 2:
+            return 'CSS'
+        if mode_code == 3:
+            return 'TO'
+        return 'NA'
