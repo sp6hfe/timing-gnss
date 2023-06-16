@@ -17,9 +17,11 @@ class Furuno:
             'receiver_status': 0
         }
 
-    def process(self, message):
-        if self.__detect_message(message, self.POSITION_MODE_MESSAGES):
-            self.__position_mode_decode(message)
+    def process(self, data):
+        message = self.__recover_message_from_data(data)
+        if len(message) > 0:
+            if self.__detect_message(message, self.POSITION_MODE_MESSAGES):
+                self.__position_mode_decode(message)
 
     # DATA PROVIDERS #
     def get_position_mode_data(self):
@@ -95,21 +97,19 @@ class Furuno:
 
     # PUBLIC MESSAGE DECODERS #
 
-    def detect(self, message):
-        # PERDSYS,VERSION,device,version,reason,reserve*CRC
-        if 'PERDSYS,VERSION' in message:
-            elements_count_after_split_with_crc = 2
-            elements_count_in_data_section = 6
+    def detect(self, data):
+        message = self.__recover_message_from_data(data)
+        if len(message) > 0:
+            # PERDSYS,VERSION,device,version,reason,reserve*CRC
+            if 'PERDSYS,VERSION' in message:
+                data_count = 6
 
-            message_parts = message.split('*')
-            if len(message_parts) == elements_count_after_split_with_crc:
-                # interesting information is in the data section
-                data = message_parts[0].split(',')
-                if len(data) == elements_count_in_data_section:
+                module_data = message.split(',')
+                if len(module_data) == data_count:
                     module_info = {
-                        'name': data[2],
-                        'version': data[3],
-                        'id': data[5]
+                        'name': module_data[2],
+                        'version': module_data[3],
+                        'id': module_data[5]
                     }
                     return module_info
         return None
@@ -118,22 +118,15 @@ class Furuno:
 
     def __position_mode_decode(self, message):
         if 'PERDCRY,TPS3' in message:
-            print(message)
-            elements_count_after_split_with_crc = 2
-            elements_count_in_data_section = 11
-
-            message_parts = message.split('*')
-            if len(message_parts) == elements_count_after_split_with_crc:
-                # interesting information is in the data section
-                data = message_parts[0].split(',')
-                if len(data) == elements_count_in_data_section:
-                    self.position_mode['mode'] = self.__translate_position_mode(
-                        int(data[2]))
-                    self.position_mode['sigma_threshold'] = int(data[4])
-                    self.position_mode['position_updates'] = int(data[5])
-                    self.position_mode['time_threshold'] = int(data[6])
-                    self.position_mode['receiver_status'] = int(data[10], 0)
-                print(self.position_mode)
+            data_count = 11
+            data = message.split(',')
+            if len(data) == data_count:
+                self.position_mode['mode'] = self.__translate_position_mode(
+                    int(data[2]))
+                self.position_mode['sigma_threshold'] = int(data[4])
+                self.position_mode['position_updates'] = int(data[5])
+                self.position_mode['time_threshold'] = int(data[6])
+                self.position_mode['receiver_status'] = int(data[10], 0)
 
     # HELPERS #
 
@@ -141,9 +134,24 @@ class Furuno:
         if len(data) < 1:
             return ''
 
-        checksum = self.__checksum(data)
-        message = '$' + data + '*' + hex(checksum)[2:].upper() + '\r\n'
+        checksum = format(self.__checksum(data), '02X')
+        message = '$' + data + '*' + checksum + '\r\n'
         return message
+
+    def __recover_message_from_data(self, message):
+        if len(message) < 1:
+            return ''
+
+        checksum_separator = '*'
+        message_parts_after_split_with_checksum = 2
+        message_parts = message.split(checksum_separator)
+        if len(message_parts) == message_parts_after_split_with_checksum:
+            data = message_parts[0].replace('$', '', 1)
+            calculated_checksum = format(self.__checksum(data), '02X')
+            received_checksum = message_parts[1][:2]
+            if calculated_checksum == received_checksum:
+                return data
+        return ''
 
     def __checksum(self, data):
         checksum = 0
