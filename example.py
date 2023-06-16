@@ -20,7 +20,7 @@ def main():
             print('Something is wrong, GNSS module should be detected already.')
             return
 
-        timing_mode = PositionMode.TIMING_ONLY
+        timing_mode = PositionMode.TIME_ONLY
         if tg_status['mode'] == timing_mode:
             print('Position mode is timing. Exiting.')
             return

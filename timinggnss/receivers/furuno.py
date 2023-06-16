@@ -30,7 +30,7 @@ class Furuno:
     def get_detection_message(self):
         return self.__assemble_message('PERDSYS,VERSION')
 
-    def get_position_mode_set_message(self, mode: str = 'SS', sigma_threshold: int = 10, time_threshold: int = 1440, latitude: float = 0, longitude: float = 0, altitude: float = 0):
+    def get_position_mode_set_message(self, position_mode: PositionMode = PositionMode.SELF_SURVEY, sigma_threshold: int = 10, time_threshold: int = 1440, latitude: float = 0, longitude: float = 0, altitude: float = 0):
         # modes: 'NAV'- navigation, 'SS' - self survey, 'CSS' - continous self survey, 'TO' - time only
         # sigma threshold in meters
         sigma_threshold_low_limit = 0
@@ -59,11 +59,11 @@ class Furuno:
             altitude_low_limit, self.__limit_float_decimal_places(altitude, 2), altitude_high_limit)
 
         query = ''
-        if mode == 'SS':
+        if position_mode == PositionMode.SELF_SURVEY:
             query = 'PERDAPI,SURVEY,1,' + \
                 str(clamped_sigma_threshold) + \
                 ',' + str(clamped_time_threshold)
-        elif mode == 'TO':
+        elif position_mode == PositionMode.TIME_ONLY:
             query = 'PERDAPI,SURVEY,3,0,0,' + \
                 str(clamped_latitude) + ',' + \
                 str(clamped_longitude) + ',' + str(clamped_altitude)
@@ -175,5 +175,5 @@ class Furuno:
         if mode_code == 2:
             return PositionMode.SELF_SURVEY
         if mode_code == 3:
-            return PositionMode.TIMING_ONLY
+            return PositionMode.TIME_ONLY
         return PositionMode.NOT_DEFINED

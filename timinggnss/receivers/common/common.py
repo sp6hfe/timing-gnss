@@ -6,4 +6,4 @@ class PositionMode(Enum):
     NAVIGATION = 1
     SELF_SURVEY = 2
     CONSTANT_SELF_SURVEY = 3
-    TIMING_ONLY = 4
+    TIME_ONLY = 4
