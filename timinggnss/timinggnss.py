@@ -32,6 +32,7 @@ class TimingGnss:
         self.gnss.debug_log(is_enabled)
 
     def status(self):
+        # assemble full status
         timinggnss_status = self.gnss.status()
         timinggnss_status['ext_signal_enabled'] = self.ext_signal_enabled
         timinggnss_status['ext_signal_frequency_hz'] = self.ext_signal_frequency_hz

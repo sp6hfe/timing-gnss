@@ -1,3 +1,4 @@
+from .common.common import PositionMode
 
 
 class Furuno:
@@ -9,7 +10,7 @@ class Furuno:
         self.MESSAGE_START_HOT = 'PERDAPI,START,HOT'
 
         self.position_mode = {
-            'mode': 'NA',
+            'mode': PositionMode.NOT_DEFINED,
             'sigma_threshold': 0,
             'time_threshold': 0,
             'position_updates': 0,
@@ -168,11 +169,11 @@ class Furuno:
 
     def __translate_position_mode(self, mode_code):
         if mode_code == 0:
-            return 'NAV'
+            return PositionMode.NAVIGATION
         if mode_code == 1:
-            return 'SS'
+            return PositionMode.SELF_SURVEY
         if mode_code == 2:
-            return 'CSS'
+            return PositionMode.SELF_SURVEY
         if mode_code == 3:
-            return 'TO'
-        return 'NA'
+            return PositionMode.TIMING_ONLY
+        return PositionMode.NOT_DEFINED

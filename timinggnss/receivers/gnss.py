@@ -16,6 +16,8 @@ class GNSS:
         self.hw_version = 'NA'
         self.hw_id = 'NA'
 
+    # PUBLIC METHODS #
+
     def debug_log(self, is_enabled):
         self.debug_log_enabled = is_enabled
 
@@ -77,6 +79,8 @@ class GNSS:
 
         return result
 
+    # FEATURES #
+
     def ext_signal_enable(self, frequency_hz, duty, offset_to_pps):
         if self.hw is not None:
             self.__tx_data(self.hw.get_ext_signal_enable_message(
@@ -85,6 +89,8 @@ class GNSS:
     def ext_signal_disable(self):
         if self.hw is not None:
             self.__tx_data(self.hw.get_ext_signal_disable_message())
+
+    # PRIVATE METHODS #
 
     def __process_hw_detection(self, message):
         if self.hw is not None:

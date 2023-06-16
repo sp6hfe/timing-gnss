@@ -1,4 +1,5 @@
 from timinggnss.timinggnss import TimingGnss
+from timinggnss.receivers.common.common import PositionMode
 import time
 
 
@@ -14,12 +15,12 @@ def main():
         TG.debug_log(False)
         if (tg_status['detected']):
             print('Connected to ' + tg_status['id'] + ' receiver (name: ' +
-                  tg_status['name'] + ', version: ' + tg_status['version'] + '.')
+                  tg_status['name'] + ', version: ' + tg_status['version'] + ').')
         else:
             print('Something is wrong, GNSS module should be detected already.')
             return
 
-        timing_mode = 'TO'
+        timing_mode = PositionMode.TIMING_ONLY
         if tg_status['mode'] == timing_mode:
             print('Position mode is timing. Exiting.')
             return
