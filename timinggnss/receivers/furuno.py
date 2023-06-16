@@ -12,7 +12,8 @@ class Furuno:
             'mode': 'NA',
             'sigma_threshold': 0,
             'time_threshold': 0,
-            'position_updates': 0
+            'position_updates': 0,
+            'receiver_status': 0
         }
 
     def process(self, message):
@@ -127,9 +128,10 @@ class Furuno:
                 if len(data) == elements_count_in_data_section:
                     self.position_mode['mode'] = self.__translate_position_mode(
                         int(data[2]))
-                    self.position_mode['sigma_threshold'] = int(data[3])
+                    self.position_mode['sigma_threshold'] = int(data[4])
                     self.position_mode['position_updates'] = int(data[5])
                     self.position_mode['time_threshold'] = int(data[6])
+                    self.position_mode['receiver_status'] = int(data[10], 0)
                 print(self.position_mode)
 
     # HELPERS #
