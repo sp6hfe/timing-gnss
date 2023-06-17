@@ -38,6 +38,10 @@ class TimingGnss:
 
         return timinggnss_status
 
+    def set_self_survey_position_mode(self, sigma_threshold: int, time_threshold: int):
+        self.gnss.set_self_survey_position_mode(
+            sigma_threshold=sigma_threshold, time_threshold=time_threshold)
+
     def ext_signal_set(self, frequency=1000):
         self.ext_signal_frequency_hz = int(frequency)
         return self.ext_signal_enable()

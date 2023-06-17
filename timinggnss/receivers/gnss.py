@@ -66,13 +66,11 @@ class GNSS:
 
     def status(self):
         result = dict()
-        position_mode_data = self.hw.get_position_mode_data()
-
         result['detected'] = self.hw_detected
         result['name'] = self.hw_name
         result['version'] = self.hw_version
         result['id'] = self.hw_id
-        result['mode'] = position_mode_data['mode']
+        result['position_mode_data'] = self.hw.get_position_mode_data()
 
         return result
 
