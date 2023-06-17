@@ -1,3 +1,4 @@
+import logging
 from .serialthread import SerialThread
 from .receivers.gnss import GNSS
 
@@ -27,10 +28,6 @@ class TimingGnss:
         if len(data) > 0:
             self.serial_thread.write(data)
 
-    def debug_log(self, is_enabled):
-        self.serial_thread.debug_log(is_enabled)
-        self.gnss.debug_log(is_enabled)
-
     def status(self):
         # assemble full status
         timinggnss_status = self.gnss.status()
@@ -59,4 +56,4 @@ class TimingGnss:
         self.gnss.process(message)
 
     def __serial_thread_error(self):
-        print('Serial thread error occured.')
+        logging.error('Serial thread error occured.')

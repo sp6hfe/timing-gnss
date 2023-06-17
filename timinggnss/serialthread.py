@@ -1,3 +1,4 @@
+import logging
 import serial
 from threading import Thread, Lock
 import time
@@ -33,7 +34,6 @@ class SerialThread(Thread):
         is_paused (bool): Indicates if the reading loop is currently paused (writing is possible).
         write_queue (list): Queue to store messages to send.
         thread (threading.Threadad): Thread responsible for serial communication.
-        debug_log_enabled (bool): Indicates if read/written data is logged to the console for debug purposes
 
     """
 
@@ -48,7 +48,6 @@ class SerialThread(Thread):
         self.is_paused = False
         self.write_queue = []
         self.thread = None
-        self.debug_log_enabled = False
         self.mutex = Lock()
         Thread.__init__(self)
 
@@ -91,8 +90,7 @@ class SerialThread(Thread):
                         garbage_data += self.serial_port.read_until(
                             b'\n', 100).decode('UTF-8')
                         if garbage_data[-1] == '\n':
-                            if self.debug_log_enabled:
-                                print('< [g] ' + garbage_data[::-1])
+                            logging.debug('< [g] %s', garbage_data[::-1])
                             sync_with_newline = False
                             garbage_data = ''
                             line_buffer = ''
@@ -103,8 +101,7 @@ class SerialThread(Thread):
                             1).decode('UTF-8')
                         if incoming_byte == '\n':
                             # send received line for further processing
-                            if self.debug_log_enabled:
-                                print('< ' + line_buffer)
+                            logging.debug('< %s', line_buffer)
                             self.on_new_line_callback(line_buffer)
                             line_buffer = ''
                         elif len(incoming_byte) > 0 and len(line_buffer) < self.max_bytes:
@@ -114,7 +111,7 @@ class SerialThread(Thread):
                 break
             except serial.SerialException as e:
                 # any problem with the serial device stops its further usage
-                print('Serial connection error:', e)
+                logging.error('Serial connection error: %s', e)
                 if self.on_error_callback:
                     self.on_error_callback()
             finally:
@@ -136,7 +133,7 @@ class SerialThread(Thread):
                 self.thread.start()
                 self.is_started = True
             except:
-                print("Can't start serial handling thread!")
+                logging.error('Can\'t start serial handling thread!')
 
     def stop(self):
         """
@@ -189,16 +186,6 @@ class SerialThread(Thread):
         if self.is_started and len(data) > 0:
             self.write_queue.append(data)
 
-    def debug_log(self, is_enabled):
-        """
-        Enable or disable read/write operation logging.
-        This function is purely for debugging purposes.
-
-        Args:
-            is_enabled (bool): True: read/write data logging enabled, False: no logging.
-        """
-        self.debug_log_enabled = is_enabled
-
     def __open_serial_connection(self):
         """"
         Open HW connection to the serial device.
@@ -223,6 +210,5 @@ class SerialThread(Thread):
         if self.serial_port and self.serial_port.is_open:
             while self.write_queue:
                 data = self.write_queue.pop(0)
-                if self.debug_log_enabled:
-                    print('> ' + data)
+                logging.debug('> %s', data)
                 self.serial_port.write(data.encode('UTF-8'))

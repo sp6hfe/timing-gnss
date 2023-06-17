@@ -1,3 +1,4 @@
+import logging
 from .furuno import Furuno
 from .common.common import PositionMode
 import time
@@ -9,7 +10,6 @@ class GNSS:
 
         self.hw_adapters_list = [Furuno()]
         self.messages_processing_prefix_list = list()
-        self.debug_log_enabled = False
 
         self.hw = None
         self.hw_detected = False
@@ -18,9 +18,6 @@ class GNSS:
         self.hw_id = 'NA'
 
     # PUBLIC METHODS #
-
-    def debug_log(self, is_enabled):
-        self.debug_log_enabled = is_enabled
 
     def detect(self):
         self.hw = None
@@ -60,8 +57,7 @@ class GNSS:
     def process(self, message):
         for prefix in self.messages_processing_prefix_list:
             if prefix in message:
-                if self.debug_log_enabled:
-                    print('< ^^')
+                logging.debug('< ^^')
                 # incoming messages processing
                 if self.hw_detected:
                     self.hw.process(message)
