@@ -1,6 +1,6 @@
 import logging
 from .serialthread import SerialThread
-from .receivers.gnss import GNSS
+from .receivers.gnss_receiver import GNSSReceiver
 
 
 class TimingGnss:
@@ -12,7 +12,7 @@ class TimingGnss:
 
         self.serial_thread = SerialThread(
             port, baudrate, self.__new_message, self.__serial_thread_error)
-        self.gnss = GNSS(self.write)
+        self.gnss = GNSSReceiver(self.write)
 
     def __enter__(self):
         self.serial_thread.start()

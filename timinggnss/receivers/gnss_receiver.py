@@ -1,14 +1,14 @@
 import logging
-from .furuno import Furuno
-from .common.common import PositionMode
+from .furuno_adapter import FurunoAdapter
+from ..common.enums import PositionMode
 import time
 
 
-class GNSS:
+class GNSSReceiver:
     def __init__(self, tx_data_callback):
         self.tx_data = tx_data_callback
 
-        self.hw_adapters_list = [Furuno()]
+        self.hw_adapters_list = [FurunoAdapter()]
         self.messages_processing_prefix_list = list()
 
         self.hw = None

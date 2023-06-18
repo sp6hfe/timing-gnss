@@ -1,16 +1,17 @@
-from .common.common import PositionMode
+from ..common.enums import PositionMode, PositionFixMode
 
 
-class Furuno:
+class FurunoAdapter:
 
     DETECTION_MESSAGES = ['PERDSYS']
-    POSITION_MODE_MESSAGES = ['PERDCRY']
+    POSITION_MODE_MESSAGES = ['PERDCRY', 'GNGSA']
 
     def __init__(self):
         self.MESSAGE_START_HOT = 'PERDAPI,START,HOT'
 
         self.position_mode = {
             'mode': PositionMode.NOT_DEFINED,
+            'fix': PositionFixMode.FIX_MISSING,
             'sigma_threshold': 0,
             'time_threshold': 0,
             'position_updates': 0,
@@ -127,6 +128,13 @@ class Furuno:
                 self.position_mode['position_updates'] = int(data[5])
                 self.position_mode['time_threshold'] = int(data[6])
                 self.position_mode['receiver_status'] = int(data[10], 0)
+        if 'GNGSA,A' in message:
+            data_count = 19
+            data = message.split(',')
+            if len(data) == data_count:
+                self.position_mode['fix'] = self.__translate_position_fix_pode(
+                    int(data[2]))
+            print(self.position_mode)
 
     # HELPERS #
 
@@ -175,7 +183,7 @@ class Furuno:
                 return True
         return False
 
-    def __translate_position_mode(self, mode_code):
+    def __translate_position_mode(self, mode_code: int):
         if mode_code == 0:
             return PositionMode.NAVIGATION
         if mode_code == 1:
@@ -185,3 +193,12 @@ class Furuno:
         if mode_code == 3:
             return PositionMode.TIME_ONLY
         return PositionMode.NOT_DEFINED
+
+    def __translate_position_fix_pode(self, mode_code: int):
+        if mode_code == 1:
+            return PositionFixMode.FIX_MISSING
+        if mode_code == 2:
+            return PositionFixMode.FIX_2D
+        if mode_code == 3:
+            return PositionFixMode.FIX_3D
+        return PositionFixMode.FIX_MISSING

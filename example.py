@@ -1,6 +1,6 @@
 import logging
 from timinggnss.timinggnss import TimingGnss
-from timinggnss.receivers.common.common import PositionMode
+from timinggnss.common.enums import PositionMode
 import time
 
 SERIAL_IF = '/dev/ttyUSB0'
