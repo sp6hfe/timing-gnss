@@ -28,8 +28,8 @@ class GNSSReceiver:
 
         max_detection_time_sec = 5
 
-        for concrete_hw in self.hw_adapters_list:
-            self.hw = concrete_hw
+        for hw_adapter in self.hw_adapters_list:
+            self.hw = hw_adapter
             self.__enable_incoming_messages_processing(
                 self.hw.DETECTION_MESSAGES)
             self.__tx_data(self.hw.get_detection_message())
