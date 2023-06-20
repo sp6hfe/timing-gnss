@@ -1,14 +1,19 @@
 import logging
-from .furuno_adapter import FurunoAdapter
+# from .furuno_adapter import FurunoAdapter
 from ..common.enums import PositionMode
 import time
+import os
+import sys
+import importlib
 
 
 class GNSSReceiver:
     def __init__(self, tx_data_callback):
         self.tx_data = tx_data_callback
 
-        self.hw_adapters_list = [FurunoAdapter()]
+        sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+        # self.hw_adapters_list = [FurunoAdapter()]
+        self.hw_adapters_list = self.__get_list_of_adapters()
         self.messages_processing_prefix_list = list()
 
         self.hw = None
@@ -29,7 +34,13 @@ class GNSSReceiver:
         max_detection_time_sec = 5
 
         for hw_adapter in self.hw_adapters_list:
-            self.hw = hw_adapter
+            hw_adapter_instance = self.__dynamically_load_and_instantiate_adapter(
+                hw_adapter)
+            if hw_adapter_instance is None:
+                continue
+
+            self.hw = hw_adapter_instance
+            # self.hw = hw_adapter
             self.__enable_incoming_messages_processing(
                 self.hw.DETECTION_MESSAGES)
             self.__tx_data(self.hw.get_detection_message())
@@ -117,3 +128,26 @@ class GNSSReceiver:
         for prefix in prefix_list:
             if prefix in self.messages_processing_prefix_list:
                 self.messages_processing_prefix_list.remove(prefix)
+
+    def __get_list_of_adapters(self):
+        # search for all adapter files in this directory
+        adapters_suffix = '_adapter.py'
+        adapters_folder = os.path.dirname(os.path.realpath(__file__))
+        adapter_names = [f.replace('.py', '') for f in os.listdir(
+            adapters_folder) if f.endswith(adapters_suffix)]
+        return adapter_names
+
+    def __convert_snake_to_camel(self, snake: str):
+        snake_parts = snake.split('_')
+        return ''.join(part.title() for part in snake_parts)
+
+    def __dynamically_load_and_instantiate_adapter(self, adapter_name):
+        # assumption here is that class name is a CamelCase version of the module's snake_case name
+        # for example a file abc_def_adapter.py should contain AbcDefAdapter class
+
+        imported_module = importlib.import_module(
+            adapter_name, 'timinggnss.receivers')
+        adapter_classname = self.__convert_snake_to_camel(adapter_name)
+        adapter_class = getattr(imported_module, adapter_classname)
+
+        return adapter_class()
