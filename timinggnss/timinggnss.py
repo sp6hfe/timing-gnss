@@ -1,6 +1,8 @@
 import logging
+
 from .serialthread import SerialThread
 from .receivers.gnss_receiver import GNSSReceiver
+from .receivers.hw_adapter_furuno import HwAdapterFuruno
 
 
 class TimingGnss:
@@ -13,6 +15,7 @@ class TimingGnss:
         self.serial_thread = SerialThread(
             port, baudrate, self.__new_message, self.__serial_thread_error)
         self.gnss = GNSSReceiver(self.write)
+        self.gnss.add_adapter(HwAdapterFuruno())
 
     def __enter__(self):
         self.serial_thread.start()

@@ -1,7 +1,8 @@
+from .hw_adapter_interface import HwAdapterInterface
 from ..common.enums import PositionMode, PositionFixMode
 
 
-class FurunoAdapter:
+class HwAdapterFuruno(HwAdapterInterface):
 
     DETECTION_MESSAGES = ['PERDSYS']
     POSITION_MODE_MESSAGES = ['PERDCRY', 'GNGSA']
@@ -18,17 +19,37 @@ class FurunoAdapter:
             'receiver_status': 0
         }
 
-    def process(self, data):
+    # General processing #
+
+    def detect(self, data: str):
+        message = self.__recover_message_from_data(data)
+        if len(message) > 0:
+            # PERDSYS,VERSION,device,version,reason,reserve*CRC
+            if 'PERDSYS,VERSION' in message:
+                data_count = 6
+
+                module_data = message.split(',')
+                if len(module_data) == data_count:
+                    module_info = {
+                        'name': module_data[2],
+                        'version': module_data[3],
+                        'id': module_data[5]
+                    }
+                    return module_info
+        return None
+
+    def process(self, data: str):
         message = self.__recover_message_from_data(data)
         if len(message) > 0:
             if self.__detect_message(message, self.POSITION_MODE_MESSAGES):
                 self.__position_mode_decode(message)
 
-    # DATA PROVIDERS #
+    # Data providers #
+
     def get_position_mode_data(self):
         return self.position_mode
 
-    # MESSAGE GENERATORS #
+    # Message generators #
 
     def get_detection_message(self):
         return self.__assemble_message('PERDSYS,VERSION')
@@ -96,26 +117,7 @@ class FurunoAdapter:
     def get_ext_signal_disable_message(self):
         return self.__assemble_message('PERDAPI,FREQ,0,0,0,0')
 
-    # PUBLIC MESSAGE DECODERS #
-
-    def detect(self, data):
-        message = self.__recover_message_from_data(data)
-        if len(message) > 0:
-            # PERDSYS,VERSION,device,version,reason,reserve*CRC
-            if 'PERDSYS,VERSION' in message:
-                data_count = 6
-
-                module_data = message.split(',')
-                if len(module_data) == data_count:
-                    module_info = {
-                        'name': module_data[2],
-                        'version': module_data[3],
-                        'id': module_data[5]
-                    }
-                    return module_info
-        return None
-
-    # PRIVATE MESSAGE DECODERS #
+    # Provate message decoders #
 
     def __position_mode_decode(self, message):
         if 'PERDCRY,TPS3' in message:
@@ -136,7 +138,7 @@ class FurunoAdapter:
                     int(data[2]))
             print(self.position_mode)
 
-    # HELPERS #
+    # Helpers #
 
     def __assemble_message(self, data):
         if len(data) < 1:

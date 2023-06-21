@@ -1,14 +1,15 @@
 import logging
-from .furuno_adapter import FurunoAdapter
-from ..common.enums import PositionMode
 import time
+
+from .hw_adapter_interface import HwAdapterInterface
+from ..common.enums import PositionMode
 
 
 class GNSSReceiver:
     def __init__(self, tx_data_callback):
         self.tx_data = tx_data_callback
 
-        self.hw_adapters_list = [FurunoAdapter()]
+        self.hw_adapters_list = list()
         self.messages_processing_prefix_list = list()
 
         self.hw = None
@@ -17,7 +18,10 @@ class GNSSReceiver:
         self.hw_version = 'NA'
         self.hw_id = 'NA'
 
-    # PUBLIC METHODS #
+    # Public methods #
+
+    def add_adapter(self, hw_adapter: HwAdapterInterface):
+        self.hw_adapters_list.append(hw_adapter)
 
     def detect(self):
         self.hw = None
@@ -82,7 +86,7 @@ class GNSSReceiver:
         self.__tx_data(self.hw.get_position_mode_set_message(
             position_mode=PositionMode.TIME_ONLY, latitude=latitude, longitude=longitude, altitude=altitude))
 
-    # FEATURES #
+    # Features #
 
     def ext_signal_enable(self, frequency_hz, duty, offset_to_pps):
         if self.hw is not None:
@@ -93,7 +97,7 @@ class GNSSReceiver:
         if self.hw is not None:
             self.__tx_data(self.hw.get_ext_signal_disable_message())
 
-    # PRIVATE METHODS #
+    # Private methods #
 
     def __process_hw_detection(self, message):
         if self.hw is not None:
