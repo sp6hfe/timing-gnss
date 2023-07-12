@@ -132,13 +132,12 @@ class HwAdapterFuruno(HwAdapterInterface):
                 self.position_mode['position_updates'] = int(data[5])
                 self.position_mode['time_threshold'] = int(data[6])
                 self.position_mode['receiver_status'] = int(data[10], 0)
-        if 'GNGSA,A' in message:
+        elif 'GNGSA,A' in message:
             data_count = 19
             data = message.split(',')
             if len(data) == data_count:
                 self.position_mode['fix'] = self.__translate_position_fix_pode(
                     int(data[2]))
-            print(self.position_mode)
 
     # Helpers #
 
