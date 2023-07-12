@@ -4,9 +4,9 @@ import time
 
 SERIAL_IF = '/dev/ttyUSB0'
 SERIAL_BAUD = 38400
-SS_SIGMA_THRESHOLD = 0
-SS_TIME_THRESHOLD = 1
-TIME_ONLY_TRANSITION_TIME = SS_TIME_THRESHOLD + 1
+PRECISE_TIMING_ENTERING_THRESHOLD_FOR_SIGMA_IN_METERS = 0
+PRECISE_TIMING_ENTERING_THRESHOLD_FOR_TIME_IN_MINUTES = 1
+AWAITING_FOR_PRECISE_TIMING_IN_MINUTES = PRECISE_TIMING_ENTERING_THRESHOLD_FOR_TIME_IN_MINUTES + 1
 
 
 def main():
@@ -34,12 +34,12 @@ def main():
         # 3. If not init precise timing based on self survey
         print("Not in precise timing mode. Setting reasonable self survey parameters.")
         TG.init_precise_timing_by_self_survey(
-            sigma_threshold=SS_SIGMA_THRESHOLD, time_threshold=SS_TIME_THRESHOLD)
+            sigma_threshold=PRECISE_TIMING_ENTERING_THRESHOLD_FOR_SIGMA_IN_METERS, time_threshold=PRECISE_TIMING_ENTERING_THRESHOLD_FOR_TIME_IN_MINUTES)
 
         # 4. Monitor transition into to precise timing
         print('Waiting for transition into precise timing mode...')
         start = time.time()
-        while not TG.is_in_precise_timing_mode() and int(((time.time() - start) / 60)) < TIME_ONLY_TRANSITION_TIME:
+        while not TG.is_in_precise_timing_mode() and int(((time.time() - start) / 60)) < AWAITING_FOR_PRECISE_TIMING_IN_MINUTES:
             time.sleep(1)
 
         # 5. Summary
