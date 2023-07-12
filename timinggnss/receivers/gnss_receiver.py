@@ -68,15 +68,16 @@ class GNSSReceiver:
                 else:
                     self.__process_hw_detection(message)
 
-    def status(self):
+    def get_status(self):
         result = dict()
         result['detected'] = self.hw_detected
         result['name'] = self.hw_name
         result['version'] = self.hw_version
         result['id'] = self.hw_id
-        result['position_mode_data'] = self.hw.get_position_mode_data()
-
         return result
+
+    def get_position_mode_status(self):
+        return self.hw.get_position_mode_data()
 
     def set_self_survey_position_mode(self, sigma_threshold: int = 0, time_threshold: int = 0):
         self.__tx_data(self.hw.get_position_mode_set_message(

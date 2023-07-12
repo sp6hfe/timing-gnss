@@ -1,6 +1,5 @@
 import logging
 from timinggnss.timinggnss import TimingGnss
-from timinggnss.common.enums import PositionMode
 import time
 
 SERIAL_IF = '/dev/ttyUSB0'
@@ -27,39 +26,31 @@ def main():
             print('Something is wrong, GNSS module should be detected already.')
             return
 
-        # 2. Check GNSS receiver state to see if in TIME ONLY mode, if so we're done
-        if in_time_only_mode(tg_status):
-            print('Position mode is TIME ONLY. Exiting.')
+        # 2. Check GNSS receiver state to see if current mode is precise timing, if so we're done
+        if TG.is_in_precise_timing_mode():
+            print('In precise timing mode already. Exiting.')
             return
 
-        # 3. If not switch to SELF SURVEY mode with reasonable parameters allowing switching to TIME ONLY mode
-        print(
-            "Position mode is not TIME ONLY. Setting reasonable SELF SURVEY parameters...")
-
-        TG.set_self_survey_position_mode(
+        # 3. If not init precise timing based on self survey
+        print("Not in precise timing mode. Setting reasonable self survey parameters.")
+        TG.init_precise_timing_by_self_survey(
             sigma_threshold=SS_SIGMA_THRESHOLD, time_threshold=SS_TIME_THRESHOLD)
 
-        # 4. Monitor transition to TIME ONLY mode
-        print('Waiting for TIME ONLY position mode...')
-        tg_status = TG.status()
+        # 4. Monitor transition into to precise timing
+        print('Waiting for transition into precise timing mode...')
         start = time.time()
-        while not in_time_only_mode(tg_status) and int(((time.time() - start) / 60)) < TIME_ONLY_TRANSITION_TIME:
+        while not TG.is_in_precise_timing_mode() and int(((time.time() - start) / 60)) < TIME_ONLY_TRANSITION_TIME:
             time.sleep(1)
-            tg_status = TG.status()
 
         # 5. Summary
-        if in_time_only_mode(TG.status()):
-            print("Position mode changed to TIME ONLY.")
+        if TG.is_in_precise_timing_mode():
+            print("GNSS module entered precise timing mode.")
         else:
-            print("Position mode is not TIME ONLY.")
+            print("GNSS module couldn't make it into precise timing mode.")
 
 
 def configure_logging():
     logging.basicConfig(level=logging.DEBUG)
-
-
-def in_time_only_mode(status):
-    return status['position_mode_data']['mode'] == PositionMode.TIME_ONLY
 
 
 if __name__ == "__main__":

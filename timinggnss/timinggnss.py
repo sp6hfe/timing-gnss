@@ -4,6 +4,8 @@ from .serialthread import SerialThread
 from .receivers.gnss_receiver import GNSSReceiver
 from .receivers.hw_adapter_furuno import HwAdapterFuruno
 
+from .common.enums import PositionMode
+
 
 class TimingGnss:
     def __init__(self, port, baudrate):
@@ -33,7 +35,7 @@ class TimingGnss:
 
     def status(self):
         # assemble full status
-        timinggnss_status = self.gnss.status()
+        timinggnss_status = self.gnss.get_status()
         timinggnss_status['ext_signal_enabled'] = self.ext_signal_enabled
         timinggnss_status['ext_signal_frequency_hz'] = self.ext_signal_frequency_hz
         timinggnss_status['ext_signal_duty'] = self.ext_signal_duty
@@ -41,9 +43,16 @@ class TimingGnss:
 
         return timinggnss_status
 
-    def set_self_survey_position_mode(self, sigma_threshold: int, time_threshold: int):
+    def init_precise_timing_by_self_survey(self, sigma_threshold: int, time_threshold: int):
         self.gnss.set_self_survey_position_mode(
             sigma_threshold=sigma_threshold, time_threshold=time_threshold)
+
+    def init_precise_timing_by_position(self, latitude: float, longitude: float, altitude: float):
+        self.gnss.set_time_only_position_mode(
+            latitude=latitude, longitude=longitude, altitude=altitude)
+
+    def is_in_precise_timing_mode(self) -> bool:
+        return self.gnss.get_position_mode_status()['mode'] == PositionMode.TIME_ONLY
 
     def ext_signal_set(self, frequency=1000):
         self.ext_signal_frequency_hz = int(frequency)
