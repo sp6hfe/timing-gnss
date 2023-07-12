@@ -1,3 +1,5 @@
+from typing import Optional, Union, Dict, List
+
 from .hw_adapter_interface import HwAdapterInterface
 from ..common.enums import PositionMode, PositionFixMode
 
@@ -21,7 +23,7 @@ class HwAdapterFuruno(HwAdapterInterface):
 
     # General processing #
 
-    def detect(self, data: str):
+    def detect(self, data: str) -> Optional[Dict[str, str]]:
         message = self.__recover_message_from_data(data)
         if len(message) > 0:
             # PERDSYS,VERSION,device,version,reason,reserve*CRC
@@ -38,7 +40,7 @@ class HwAdapterFuruno(HwAdapterInterface):
                     return module_info
         return None
 
-    def process(self, data: str):
+    def process(self, data: str) -> None:
         message = self.__recover_message_from_data(data)
         if len(message) > 0:
             if self.__detect_message(message, self.POSITION_MODE_MESSAGES):
@@ -46,15 +48,15 @@ class HwAdapterFuruno(HwAdapterInterface):
 
     # Data providers #
 
-    def get_position_mode_data(self):
+    def get_position_mode_data(self) -> Optional[Dict[str, Union[int, PositionMode, PositionFixMode]]]:
         return self.position_mode
 
     # Message generators #
 
-    def get_detection_message(self):
+    def get_detection_message(self) -> Optional[str]:
         return self.__assemble_message('PERDSYS,VERSION')
 
-    def get_position_mode_set_message(self, position_mode: PositionMode = PositionMode.SELF_SURVEY, sigma_threshold: int = 10, time_threshold: int = 1440, latitude: float = 0, longitude: float = 0, altitude: float = 0):
+    def get_position_mode_set_message(self, position_mode: PositionMode = PositionMode.SELF_SURVEY, sigma_threshold: int = 10, time_threshold: int = 1440, latitude: float = 0, longitude: float = 0, altitude: float = 0) -> Optional[str]:
         # modes: 'NAV'- navigation, 'SS' - self survey, 'CSS' - continous self survey, 'TO' - time only
         # sigma threshold in meters
         sigma_threshold_low_limit = 0
@@ -94,7 +96,7 @@ class HwAdapterFuruno(HwAdapterInterface):
 
         return self.__assemble_message(query)
 
-    def get_ext_signal_enable_message(self, frequency_hz=10**6, duty=50, offset_to_pps=0):
+    def get_ext_signal_enable_message(self, frequency_hz: int = 10**6, duty: int = 50, offset_to_pps: int = 0) -> Optional[str]:
         frequency_low_limit_hz = 10
         frequency_high_limit_hz = 40*10**6
         duty_low_limit = 10
@@ -114,12 +116,12 @@ class HwAdapterFuruno(HwAdapterInterface):
             ',' + str(new_offset_to_pps)
         return self.__assemble_message(query)
 
-    def get_ext_signal_disable_message(self):
+    def get_ext_signal_disable_message(self) -> Optional[str]:
         return self.__assemble_message('PERDAPI,FREQ,0,0,0,0')
 
-    # Provate message decoders #
+    # Private message decoders #
 
-    def __position_mode_decode(self, message):
+    def __position_mode_decode(self, message: str) -> None:
         if 'PERDCRY,TPS3' in message:
             data_count = 11
             data = message.split(',')
@@ -140,17 +142,17 @@ class HwAdapterFuruno(HwAdapterInterface):
 
     # Helpers #
 
-    def __assemble_message(self, data):
+    def __assemble_message(self, data: str) -> Optional[str]:
         if len(data) < 1:
-            return ''
+            return None
 
         checksum = format(self.__checksum(data), '02X')
         message = '$' + data + '*' + checksum + '\r\n'
         return message
 
-    def __recover_message_from_data(self, message):
+    def __recover_message_from_data(self, message: str) -> Optional[str]:
         if len(message) < 1:
-            return ''
+            return None
 
         checksum_separator = '*'
         message_parts_after_split_with_checksum = 2
@@ -161,31 +163,31 @@ class HwAdapterFuruno(HwAdapterInterface):
             received_checksum = message_parts[1][:2]
             if calculated_checksum == received_checksum:
                 return data
-        return ''
+        return None
 
-    def __checksum(self, data):
+    def __checksum(self, data: str) -> int:
         checksum = 0
         for byte in data:
             checksum ^= ord(byte)
         return checksum
 
-    def __clamp_value(self, min, val, max):
+    def __clamp_value(self, min: int, val: int, max: int) -> int:
         return sorted((min, val, max))[1]
 
-    def __limit_float_decimal_places(self, value: float, max_decimal_places: int):
+    def __limit_float_decimal_places(self, value: float, max_decimal_places: int) -> float:
         decimal_places = str(value)[::1].find('.')
         if decimal_places > max_decimal_places:
             value = int(value * 10**max_decimal_places) / \
                 (10**max_decimal_places)
         return value
 
-    def __detect_message(self, message, detectables_list):
+    def __detect_message(self, message: str, detectables_list: List[str]) -> bool:
         for detectable in detectables_list:
             if detectable in message:
                 return True
         return False
 
-    def __translate_position_mode(self, mode_code: int):
+    def __translate_position_mode(self, mode_code: int) -> PositionMode:
         if mode_code == 0:
             return PositionMode.NAVIGATION
         if mode_code == 1:
@@ -196,7 +198,7 @@ class HwAdapterFuruno(HwAdapterInterface):
             return PositionMode.TIME_ONLY
         return PositionMode.NOT_DEFINED
 
-    def __translate_position_fix_pode(self, mode_code: int):
+    def __translate_position_fix_pode(self, mode_code: int) -> PositionFixMode:
         if mode_code == 1:
             return PositionFixMode.FIX_MISSING
         if mode_code == 2:
