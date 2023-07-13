@@ -80,22 +80,24 @@ class GNSSReceiver:
         return self.hw.get_position_mode_data()
 
     def set_self_survey_position_mode(self, sigma_threshold: int = 0, time_threshold: int = 0):
-        self.__tx_data(self.hw.get_position_mode_set_message(
-            position_mode=PositionMode.SELF_SURVEY, sigma_threshold=sigma_threshold, time_threshold=time_threshold))
+        if self.hw_detected:
+            self.__tx_data(self.hw.get_position_mode_set_message(
+                position_mode=PositionMode.SELF_SURVEY, sigma_threshold=sigma_threshold, time_threshold=time_threshold))
 
     def set_time_only_position_mode(self, latitude: float = 0, longitude: float = 0, altitude: float = 0):
-        self.__tx_data(self.hw.get_position_mode_set_message(
-            position_mode=PositionMode.TIME_ONLY, latitude=latitude, longitude=longitude, altitude=altitude))
+        if self.hw_detected:
+            self.__tx_data(self.hw.get_position_mode_set_message(
+                position_mode=PositionMode.TIME_ONLY, latitude=latitude, longitude=longitude, altitude=altitude))
 
     # Features #
 
     def ext_signal_enable(self, frequency_hz, duty, offset_to_pps):
-        if self.hw is not None:
+        if self.hw_detected:
             self.__tx_data(self.hw.get_ext_signal_enable_message(
                 frequency_hz, duty, offset_to_pps))
 
     def ext_signal_disable(self):
-        if self.hw is not None:
+        if self.hw_detected:
             self.__tx_data(self.hw.get_ext_signal_disable_message())
 
     # Private methods #
