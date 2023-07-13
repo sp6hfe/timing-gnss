@@ -7,7 +7,7 @@ from ..common.enums import PositionMode, PositionFixMode
 class HwAdapterFuruno(HwAdapterInterface):
 
     DETECTION_MESSAGES = ['PERDSYS']
-    POSITION_MODE_MESSAGES = ['PERDCRY', 'GNGSA']
+    STATUS_MESSAGES = ['PERDCRY', 'GNGSA']
 
     def __init__(self):
         self.MESSAGE_START_HOT = 'PERDAPI,START,HOT'
@@ -38,12 +38,15 @@ class HwAdapterFuruno(HwAdapterInterface):
                         'id': module_data[5]
                     }
                     return module_info
+            else:
+                # handle any other messages allowed during HW detection phase
+                self.process(data)
         return None
 
     def process(self, data: str) -> None:
         message = self.__recover_message_from_data(data)
         if len(message) > 0:
-            if self.__detect_message(message, self.POSITION_MODE_MESSAGES):
+            if self.__detect_message(message, self.STATUS_MESSAGES):
                 self.__position_mode_decode(message)
 
     # Data providers #

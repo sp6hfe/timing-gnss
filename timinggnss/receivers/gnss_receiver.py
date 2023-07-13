@@ -34,27 +34,33 @@ class GNSSReceiver:
 
         for hw_adapter in self.hw_adapters_list:
             self.hw = hw_adapter
+
+            # allow for status capturing so it is usable just after successful detection
+            self.__enable_incoming_messages_processing(self.hw.STATUS_MESSAGES)
+            time.sleep(1.1)
+
             self.__enable_incoming_messages_processing(
                 self.hw.DETECTION_MESSAGES)
             self.__tx_data(self.hw.get_detection_message())
 
             start = time.time()
             while time.time() - start < max_detection_time_sec:
-                time.sleep(1)
+                time.sleep(0.1)
                 # don't wait longer when HW detected
                 if self.hw_detected:
                     break
 
             self.__disable_incoming_messages_processing(
                 self.hw.DETECTION_MESSAGES)
+
             # don't try another module when HW detected
             if self.hw_detected:
                 break
 
-        if self.hw_detected:
-            # enable reception of the state-carrying messages
-            self.__enable_incoming_messages_processing(
-                self.hw.POSITION_MODE_MESSAGES)
+            # if not detected release the adapter and stop further data analysis
+            self.__disable_incoming_messages_processing(
+                self.hw.STATUS_MESSAGES)
+            self.hw = None
 
         return self.hw_detected
 
