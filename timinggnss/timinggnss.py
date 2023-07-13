@@ -51,7 +51,7 @@ class TimingGnss:
         self.gnss.set_time_only_position_mode(
             latitude=latitude, longitude=longitude, altitude=altitude)
 
-    def is_in_precise_timing_mode(self) -> bool:
+    def in_precise_timing_mode(self) -> bool:
         return self.gnss.get_position_mode_status()['mode'] == PositionMode.TIME_ONLY
 
     def ext_signal_set(self, frequency=1000):

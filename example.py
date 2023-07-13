@@ -27,7 +27,7 @@ def main():
             return
 
         # 2. Check GNSS receiver state to see if current mode is precise timing, if so we're done
-        if TG.is_in_precise_timing_mode():
+        if TG.in_precise_timing_mode():
             print('In precise timing mode already. Exiting.')
             return
 
@@ -39,11 +39,11 @@ def main():
         # 4. Monitor transition into to precise timing
         print('Waiting for transition into precise timing mode...')
         start = time.time()
-        while not TG.is_in_precise_timing_mode() and int(((time.time() - start) / 60)) < AWAITING_FOR_PRECISE_TIMING_IN_MINUTES:
+        while not TG.in_precise_timing_mode() and int(((time.time() - start) / 60)) < AWAITING_FOR_PRECISE_TIMING_IN_MINUTES:
             time.sleep(1)
 
         # 5. Summary
-        if TG.is_in_precise_timing_mode():
+        if TG.in_precise_timing_mode():
             print("GNSS module entered precise timing mode.")
         else:
             print("GNSS module couldn't make it into precise timing mode.")
