@@ -21,6 +21,10 @@ class HwAdapterInterface(ABC):
     def get_position_mode_data(self) -> Optional[Dict[str, Union[int, PositionMode, PositionFixMode]]]:
         pass
 
+    @abstractmethod
+    def get_ext_signal_data(self) -> Optional[Dict[str, Union[bool, int]]]:
+        pass
+
     # Message generators #
 
     @abstractmethod
@@ -29,6 +33,10 @@ class HwAdapterInterface(ABC):
 
     @abstractmethod
     def get_position_mode_set_message(self, position_mode: PositionMode, sigma_threshold: int, time_threshold: int, latitude: float, longitude: float, altitude: float) -> Optional[str]:
+        pass
+
+    @abstractmethod
+    def get_ext_signal_status_message(self):
         pass
 
     @abstractmethod

@@ -7,7 +7,7 @@ from ..common.enums import PositionMode, PositionFixMode
 class HwAdapterFuruno(HwAdapterInterface):
 
     DETECTION_MESSAGES = ['PERDSYS']
-    STATUS_MESSAGES = ['PERDCRY', 'GNGSA']
+    STATUS_MESSAGES = ['PERDAPI', 'PERDCRY', 'GNGSA']
 
     def __init__(self):
         self.MESSAGE_START_HOT = 'PERDAPI,START,HOT'
@@ -19,6 +19,13 @@ class HwAdapterFuruno(HwAdapterInterface):
             'time_threshold': 0,
             'position_updates': 0,
             'receiver_status': 0
+        }
+
+        self.ext_signal = {
+            'enabled': False,
+            'frequency': 0,
+            'duty': 0,
+            'offset': 0
         }
 
     # General processing #
@@ -47,12 +54,17 @@ class HwAdapterFuruno(HwAdapterInterface):
         message = self.__recover_message_from_data(data)
         if len(message) > 0:
             if self.__detect_message(message, self.STATUS_MESSAGES):
-                self.__position_mode_decode(message)
+                decoded = self.__position_mode_decode(message)
+                if not decoded:
+                    self.__ext_signal_status_decode(message)
 
     # Data providers #
 
     def get_position_mode_data(self) -> Optional[Dict[str, Union[int, PositionMode, PositionFixMode]]]:
         return self.position_mode
+
+    def get_ext_signal_data(self) -> Optional[Dict[str, Union[bool, int]]]:
+        return self.ext_signal
 
     # Message generators #
 
@@ -99,6 +111,10 @@ class HwAdapterFuruno(HwAdapterInterface):
 
         return self.__assemble_message(query)
 
+    def get_ext_signal_status_message(self):
+        query = 'PERDAPI,FREQ,QUERY'
+        return self.__assemble_message(query)
+
     def get_ext_signal_enable_message(self, frequency_hz: int = 10**6, duty: int = 50, offset_to_pps: int = 0) -> Optional[str]:
         frequency_low_limit_hz = 10
         frequency_high_limit_hz = 40*10**6
@@ -124,7 +140,7 @@ class HwAdapterFuruno(HwAdapterInterface):
 
     # Private message decoders #
 
-    def __position_mode_decode(self, message: str) -> None:
+    def __position_mode_decode(self, message: str) -> bool:
         if 'PERDCRY,TPS3' in message:
             data_count = 11
             data = message.split(',')
@@ -135,12 +151,36 @@ class HwAdapterFuruno(HwAdapterInterface):
                 self.position_mode['position_updates'] = int(data[5])
                 self.position_mode['time_threshold'] = int(data[6])
                 self.position_mode['receiver_status'] = int(data[10], 0)
+                return True
         elif 'GNGSA,A' in message:
             data_count = 19
             data = message.split(',')
             if len(data) == data_count:
-                self.position_mode['fix'] = self.__translate_position_fix_pode(
+                self.position_mode['fix'] = self.__translate_position_fix_mode(
                     int(data[2]))
+                return True
+        # nothing was decoded
+        return False
+
+    def __ext_signal_status_decode(self, message: str) -> bool:
+        if 'PERDAPI,FREQ' in message:
+            data_count = 6
+            data = message.split(',')
+            if len(data) == data_count:
+                if int(data[2]) == 0:
+                    self.ext_signal['enabled'] = False
+                elif int(data[2]) == 1:
+                    self.ext_signal['enabled'] = True
+                else:
+                    # nothing was decoded
+                    return False
+
+                self.ext_signal['frequency'] = int(data[3])
+                self.ext_signal['duty'] = int(data[4])
+                self.ext_signal['offset'] = int(data[5])
+                return True
+        # nothing was decoded
+        return False
 
     # Helpers #
 
@@ -200,7 +240,7 @@ class HwAdapterFuruno(HwAdapterInterface):
             return PositionMode.TIME_ONLY
         return PositionMode.NOT_DEFINED
 
-    def __translate_position_fix_pode(self, mode_code: int) -> PositionFixMode:
+    def __translate_position_fix_mode(self, mode_code: int) -> PositionFixMode:
         if mode_code == 1:
             return PositionFixMode.FIX_MISSING
         if mode_code == 2:

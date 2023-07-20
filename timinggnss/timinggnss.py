@@ -67,6 +67,15 @@ class TimingGnss:
         self.gnss.ext_signal_disable()
         self.ext_signal_enabled = False
 
+    def ext_signal_is_set(self):
+        status = self.gnss.get_ext_signal_status()
+        if status['enabled'] == self.ext_signal_enabled:
+            if status['frequency'] == self.ext_signal_frequency_hz:
+                if status['duty'] == self.ext_signal_duty:
+                    if status['offset'] == self.ext_signal_offset_to_pps:
+                        return True
+        return False
+
     def __new_message(self, message):
         # possibly place for messages filtering and dispatching
         self.gnss.process(message)

@@ -85,6 +85,9 @@ class GNSSReceiver:
     def get_position_mode_status(self):
         return self.hw.get_position_mode_data()
 
+    def get_ext_signal_status(self):
+        return self.hw.get_ext_signal_data()
+
     def set_self_survey_position_mode(self, sigma_threshold: int = 0, time_threshold: int = 0):
         if self.hw_detected:
             self.__tx_data(self.hw.get_position_mode_set_message(
@@ -99,12 +102,18 @@ class GNSSReceiver:
 
     def ext_signal_enable(self, frequency_hz, duty, offset_to_pps):
         if self.hw_detected:
+            # set signal parameters
             self.__tx_data(self.hw.get_ext_signal_enable_message(
                 frequency_hz, duty, offset_to_pps))
+            # query for status
+            self.__tx_data(self.hw.get_ext_signal_status_message())
 
     def ext_signal_disable(self):
         if self.hw_detected:
+            # disable signal
             self.__tx_data(self.hw.get_ext_signal_disable_message())
+            # query for status
+            self.__tx_data(self.hw.get_ext_signal_status_message())
 
     # Private methods #
 
